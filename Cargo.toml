@@ -1,0 +1,11 @@
+[package]
+name = "item-scroller"
+version = "0.3.1"
+edition = "2024"
+publish = false
+
+[dependencies]
+horizon-mod-api = { path = ".horizon/sdk/api/crates/horizon-mod-api" }
+
+[package.metadata.horizon]
+sdk = "0a875da91dbb0fdcb7ba8c42c11341aa229af51a"

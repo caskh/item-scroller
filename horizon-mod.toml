@@ -1,0 +1,12 @@
+id = "item_scroller"
+name = "Item Scroller"
+version = "0.3.1"
+description = "Transfer items across container inventories using the mouse wheel."
+authors = []
+api = "0.2"
+side = "client"
+capabilities = ["registries"]
+
+[wasm]
+sha512 = "8333e19481ccf25564e7f124b87091f9da00dbd01bb58fd10ca6861372afbae831696152d056fc8f3bfe0607de851e178547c52539c975cac9c9006763d7190d"
+toolchain = "1.99.1 58cf8f9c35b355199727627d07ae34a4e2846d67"
