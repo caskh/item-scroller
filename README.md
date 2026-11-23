@@ -1,13 +1,57 @@
 # Item Scroller for Horizon
 
-Hover a storage or player inventory slot in an open container. Scroll up to push items to the other inventory or down to pull them toward the hovered side. A plain scroll moves one item. Shift moves a stack. Ctrl or Ctrl+Shift transfers matching stacks. Hold Shift and the left mouse button and sweep across slots to push each stack, or hold Ctrl+Shift and the left mouse button to push matching stacks from each newly hovered slot. Shift+Alt+wheel transfers all item types. Rebind the three actions in Controls. The mod config includes hover transfer and reverse scrolling toggles. The cursor must be empty. Wheel events are queued and processed one per client tick. The mod rechecks the menu, hovered stack and cursor before submitting clicks.
+Install [item_scroller.hmod](item_scroller.hmod) in the active Horizon profile's `horizon-mods` folder and enable Item Scroller in **Options → Mods**. It runs client-side as a WebAssembly mod on Horizon API 0.2.
 
-This implementation targets ordinary storage transfers. Equipment, crafting outputs, trading, creative tabs and recipe automation are outside its scope. The mod submits ordinary client menu clicks. The server decides whether each click succeeds.
+## Inventory
 
-Install the ready-to-use [item_scroller.hmod](item_scroller.hmod) in the active Horizon profile's `horizon-mods` folder and enable it in Options → Mods. No local build is needed to play. Developers can rebuild it with the pinned Horizon SDK and `cargo horizon-mod build --wasm`; the SDK is downloaded into `.horizon/` and is not stored in this repository.
+| Gesture | Action |
+| --- | --- |
+| Wheel over a slot | Push one item on scroll up, or pull one on scroll down |
+| Shift + wheel | Push or pull a stack |
+| Ctrl + wheel | Push or pull matching stacks |
+| Shift + Alt + wheel or left click | Move all items across inventories |
+| Alt + left click | Move all matching stacks from the hovered inventory |
+| Shift + left or right drag | Move entire stacks with left drag, or leave one item in each source slot with right drag |
+| Ctrl + left or right drag | Move one item from each visited slot |
+| Ctrl + Shift + left drag | Move all matching stacks from each visited slot |
+| W or S + a move drag | Move toward the inventory above or below the hovered slot |
+| Shift + left click with a stack on the cursor | Place it in an empty slot and move matching stacks there from the opposite inventory, or drop matching stacks by clicking outside the window |
+| Ctrl or Shift + Drop key + drag | Drop one item with Ctrl, entire stacks with Shift + left drag, or all but one with Shift + right drag |
+| Ctrl + Shift + Drop key | Drop all stacks of the hovered item type on that side |
+| X + Drop key | Drop all ordinary stacks on the hovered side |
+| R over an inventory | Merge matching stacks and sort the hovered inventory |
+| Ctrl + S | Toggle Item Scroller for the session |
+| Ctrl + Alt + Shift + I | Log the menu ID and hovered slot role |
 
-Hold Shift+Alt and left-click a chest slot to take all items, or a player inventory slot to deposit all items. Rebind both directions with Move all items in Controls.
+For drop drags, hold the Drop key while the pointer is off the slots, then hold the drag modifier and start dragging. The vanilla Drop key can be rebound. The normal player inventory transfers between the main inventory and hotbar. Sorting treats those two regions separately.
 
-In the survival inventory, transfers run between the main inventory and the hotbar. Ctrl+Shift plus your current Drop Item key throws every stack of the hovered item type from that inventory. Hold the Drop all modifier and press the current Drop Item key to throw all ordinary stacks on the hovered side and can be changed under Drop all inventory in Controls. In the player inventory both drop actions include the hotbar and main inventory. Matching by item type includes named, damaged and enchanted variants.
+In **Controls**, **Matching scroll and drag modifier** applies to wheel transfers and drag gestures. **Move matching items on click** applies to left-click and pushes matching stacks from the hovered inventory. In **Mods → Item Scroller → Config**, you can change scroll directions, enable position-aware scrolling, select a sorting method, and toggle individual features. The Ctrl + Shift + wheel option switches to the upstream move-all gesture. By default, that wheel gesture still moves matching items.
 
-Set the action keys in Mods → Item Scroller → Config. Use Controls / default follows the Controls binding, or Ctrl+Shift for Drop matching. Drop all defaults to X plus the vanilla Drop Item key.
+## Crafting and trading
+
+- Middle-click a crafting result to save its exact ingredient layout in the selected memory slot. Hold **S** to show the 18 slots. Scroll or press **1–9** to select a slot, or click a slot to select it and refill the grid. Shift-click a saved slot to fill multiple sets. Middle-click a memory slot to clear the grid.
+- Scroll up over the crafting result to take one result, hold **Shift** to quick-move results, or hold the move-all modifier to refill and craft repeatedly. Scroll down to refill from the selected recipe. Shift + scroll up over an empty result clears the grid. Right-click a result to craft up to a stack into the inventory.
+- **Shift + C** crafts the selected recipe repeatedly. **Ctrl + C** crafts and drops while held, and **Ctrl + Shift + C** toggles that behavior. **Shift + M** moves matching results to open storage. **Shift + Alt + Q** drops matching results from the player inventory.
+- Shift + scroll up over a villager trade result takes the result or clears the payment slots if the result is empty. Shift + scroll down can refill the most recently observed valid trade on that screen.
+
+Recipe memory is saved per Horizon profile by default. Horizon supplies menu layouts and handles each transaction through normal game clicks.
+
+## Menu and sorting rules
+
+The optional profile file `config/item_scroller/rules.txt` takes one rule per line. Rules are read when the inventory screen opens. Use the debug hotkey to find the menu ID and menu-order slot index. Use `inventory` for the personal inventory.
+
+```text
+menu minecraft:brewing_stand
+slot minecraft:generic_9x3 0
+grid minecraft:crafting 0 1-9
+first minecraft:diamond
+last Custom named stack
+```
+
+`menu` disables Item Scroller in that menu. `slot` excludes an individual slot from direct mod clicks. `grid` identifies the result slot and a contiguous 2×2 or 3×3 input grid for a menu whose slots Horizon exposes. `first` and `last` set sorting priorities by item ID or display name.
+
+This port is based on the behavior of [Sakura-Ryoko’s Item Scroller](https://github.com/sakura-ryoko/itemscroller/tree/26.3). Upstream trade favorites, trade-list scroll restoration, and creative inventory interactions require client APIs the pinned Horizon SDK does not expose. Java-specific integrations, per-world recipe files, recipe-book-protocol mass crafting, and sorting by vanilla creative category are also outside this release.
+
+## Build
+
+Run `cargo horizon-mod build --wasm` with the pinned Horizon SDK and Rust 1.99.1. The SDK is cached in `.horizon/`. The build updates `mod.wasm` and the manifest digest and writes the package to `target/horizon-mod/item_scroller.hmod`.

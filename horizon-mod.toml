@@ -1,12 +1,12 @@
 id = "item_scroller"
 name = "Item Scroller"
-version = "0.3.1"
-description = "Transfer items across container inventories using the mouse wheel."
+version = "0.4.1"
+description = "Inventory transfers, sorting, and crafting shortcuts for Horizon."
 authors = []
 api = "0.2"
 side = "client"
 capabilities = ["registries"]
 
 [wasm]
-sha512 = "8333e19481ccf25564e7f124b87091f9da00dbd01bb58fd10ca6861372afbae831696152d056fc8f3bfe0607de851e178547c52539c975cac9c9006763d7190d"
+sha512 = "13f1a9f2c18e9ed68d993dee35bcb2a46dd05dfebb3cc56eda9b662e18ba53fcdddee50a82bfcc77e2d7e5f431105ebbb00a6b32e0225313b2d04a701846c753"
 toolchain = "1.99.1 58cf8f9c35b355199727627d07ae34a4e2846d67"
