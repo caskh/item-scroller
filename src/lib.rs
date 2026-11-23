@@ -758,7 +758,7 @@ impl Hooks for Scroller {
             }
             if index == Some(grid.output) {
                 if dy > 0.0 {
-                    if let Some(recipe) = state.store(host, menu, &grid) {
+                    if let Some(recipe) = grid.remember(host, menu) {
                         if all || (stack && matching) {
                             return state.craft(menu, grid, recipe, 4096, false);
                         }

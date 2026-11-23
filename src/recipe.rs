@@ -16,6 +16,49 @@ pub struct Recipes {
     pub entries: [Option<Recipe>; COUNT],
     pub selected: usize,
     loaded: bool,
+    dirty: [bool; COUNT],
+}
+
+const READ_QUOTA: u64 = 4 << 20;
+
+fn decode_records(bytes: &[u8]) -> Option<Compound> {
+    let (Tag::Compound(records), end) = Tag::from_network_bytes(bytes, Some(READ_QUOTA)).ok()? else {
+        return None;
+    };
+    (end == bytes.len()).then_some(records)
+}
+
+fn read_records(host: &dyn ClientHost, path: &ConfigPath) -> Option<Compound> {
+    match host.data_files().read(path) {
+        Ok(bytes) => decode_records(&bytes),
+        Err(mod_api::ConfigFileError::NotFound) => Some(Compound::new()),
+        Err(_) => None,
+    }
+}
+
+fn updated_file(mut records: Compound, updates: Vec<(usize, Tag)>) -> Option<Vec<u8>> {
+    for (index, record) in updates {
+        records.insert(index.to_string().as_str().into(), record);
+    }
+    let bytes = Tag::Compound(records).to_network_bytes().ok()?;
+    decode_records(&bytes)?;
+    Some(bytes)
+}
+
+impl Recipe {
+    fn record(&self, host: &dyn ClientHost) -> Option<Tag> {
+        let cells = self.inputs.iter().map(|stack| {
+            let cell = match stack {
+                Some(stack) => stack.to_nbt(host)?,
+                None => Compound::new(),
+            };
+            Some(Tag::Compound(cell))
+        }).collect::<Option<Vec<_>>>()?;
+        Some(Tag::compound([
+            ("output", Tag::Compound(self.output.to_nbt(host)?)),
+            ("cells", Tag::List(cells)),
+        ]))
+    }
 }
 
 impl Recipes {
@@ -23,12 +66,9 @@ impl Recipes {
         if self.loaded || !host.setting_bool("save_recipes").unwrap_or(true) {
             return;
         }
-        self.loaded = true;
         let path = ConfigPath::new(FILE).unwrap();
-        let Some(Tag::Compound(data)) = host.data_files().read(&path).ok().and_then(|bytes| {
-            let (tag, end) = Tag::from_network_bytes(&bytes, Some(4 << 20)).ok()?;
-            (end == bytes.len()).then_some(tag)
-        }) else { return };
+        let Some(data) = read_records(host, &path) else { return };
+        self.loaded = true;
         for (index, entry) in self.entries.iter_mut().enumerate() {
             if entry.is_some() {
                 continue;
@@ -57,25 +97,19 @@ impl Recipes {
 
     pub fn store(&mut self, host: &dyn ClientHost, recipe: Recipe) {
         self.entries[self.selected] = Some(recipe);
+        self.dirty[self.selected] = true;
         if !host.setting_bool("save_recipes").unwrap_or(true) {
             return;
         }
-        let data: Compound = self.entries.iter().enumerate().filter_map(|(i, entry)| {
-            let entry = entry.as_ref()?;
-            let cells = entry.inputs.iter().map(|stack| {
-                let cell = match stack {
-                    Some(stack) => stack.to_nbt(host)?,
-                    None => Compound::new(),
-                };
-                Some(Tag::Compound(cell))
-            }).collect::<Option<Vec<_>>>()?;
-            Some((i.to_string().as_str().into(), Tag::compound([
-                ("output", Tag::Compound(entry.output.to_nbt(host)?)),
-                ("cells", Tag::List(cells)),
-            ])))
-        }).collect();
-        if let Ok(bytes) = Tag::Compound(data).to_network_bytes() {
-            let _ = host.data_files().write(&ConfigPath::new(FILE).unwrap(), &bytes);
+        let path = ConfigPath::new(FILE).unwrap();
+        let Some(records) = read_records(host, &path) else { return };
+        let updates = self.dirty.iter().enumerate().filter(|(_, dirty)| **dirty)
+            .map(|(i, _)| Some((i, self.entries[i].as_ref()?.record(host)?)))
+            .collect::<Option<Vec<_>>>();
+        if let Some(bytes) = updates.and_then(|updates| updated_file(records, updates))
+            && host.data_files().write(&path, &bytes).is_ok()
+        {
+            self.dirty.fill(false);
         }
     }
 }
@@ -230,4 +264,30 @@ pub fn take_one(host: &dyn ClientHost, menu: MenuRef, grid: &Grid, out: &ItemSta
         })
     }).or_else(|| grid.player.iter().copied().find(|&slot| menu.slot(host, slot) == Some(None)));
     target.map_or_else(Vec::new, |slot| vec![pickup(grid.output), pickup(slot)])
+}
+
+#[cfg(test)]
+mod persistence_tests {
+    use super::*;
+
+    #[test]
+    fn saving_one_slot_preserves_unresolved_records() {
+        let missing = Tag::compound([("output", Tag::compound([("id", Tag::String("absent:item".into()))]))]);
+        let mut records = Compound::new();
+        records.insert("0".into(), missing.clone());
+        let replacement = Tag::compound([("test", Tag::Int(42))]);
+        let bytes = updated_file(records, vec![(1, replacement.clone())]).unwrap();
+        let saved = decode_records(&bytes).unwrap();
+        assert_eq!(saved.get(&"0".into()), Some(&missing));
+        assert_eq!(saved.get(&"1".into()), Some(&replacement));
+    }
+
+    #[test]
+    fn reject_updates_outside_reader_quota_and_trailing_bytes() {
+        let oversized = Tag::ByteArray(vec![0; READ_QUOTA as usize]);
+        assert!(updated_file(Compound::new(), vec![(0, oversized)]).is_none());
+        let mut bytes = updated_file(Compound::new(), vec![]).unwrap();
+        bytes.push(0);
+        assert!(decode_records(&bytes).is_none());
+    }
 }
