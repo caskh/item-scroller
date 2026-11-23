@@ -114,7 +114,7 @@ dependencies = [
 
 [[package]]
 name = "item-scroller"
-version = "0.4.1"
+version = "0.4.3"
 dependencies = [
  "horizon-mod-api",
 ]

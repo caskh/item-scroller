@@ -1,6 +1,6 @@
 id = "item_scroller"
 name = "Item Scroller"
-version = "0.4.1"
+version = "0.4.3"
 description = "Inventory transfers, sorting, and crafting shortcuts for Horizon."
 authors = []
 api = "0.2"
@@ -8,5 +8,5 @@ side = "client"
 capabilities = ["registries"]
 
 [wasm]
-sha512 = "13f1a9f2c18e9ed68d993dee35bcb2a46dd05dfebb3cc56eda9b662e18ba53fcdddee50a82bfcc77e2d7e5f431105ebbb00a6b32e0225313b2d04a701846c753"
+sha512 = "7bef15aaa3b8ed51760006a43c376ec26b79d70753f5231709a6b377beaee265e3c202af0c093ad1e85321fc5730ebb8556bf92a29bc45fdc031611ce6452717"
 toolchain = "1.99.1 58cf8f9c35b355199727627d07ae34a4e2846d67"

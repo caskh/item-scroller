@@ -2,6 +2,8 @@
 
 Install [item_scroller.hmod](item_scroller.hmod) in the active Horizon profile's `horizon-mods` folder and enable Item Scroller in **Options → Mods**. It runs client-side as a WebAssembly mod on Horizon API 0.2.
 
+Russian labels are available when Horizon’s game language is set to Russian.
+
 ## Inventory
 
 | Gesture | Action |
@@ -25,7 +27,7 @@ Install [item_scroller.hmod](item_scroller.hmod) in the active Horizon profile's
 
 For drop drags, hold the Drop key while the pointer is off the slots, then hold the drag modifier and start dragging. The vanilla Drop key can be rebound. The normal player inventory transfers between the main inventory and hotbar. Sorting treats those two regions separately.
 
-In **Controls**, **Matching scroll and drag modifier** applies to wheel transfers and drag gestures. **Move matching items on click** applies to left-click and pushes matching stacks from the hovered inventory. In **Mods → Item Scroller → Config**, you can change scroll directions, enable position-aware scrolling, select a sorting method, and toggle individual features. The Ctrl + Shift + wheel option switches to the upstream move-all gesture. By default, that wheel gesture still moves matching items.
+In **Controls**, **Matching items (scroll or drag)** applies to wheel transfers and drag gestures. **Matching items (left-click)** applies to left-click and pushes matching stacks from the hovered inventory. In **Mods → Item Scroller → Config**, you can change scroll directions, enable position-aware scrolling, select a sorting method, and toggle individual features. The Ctrl + Shift + wheel option switches to the upstream move-all gesture. By default, that wheel gesture still moves matching items.
 
 ## Crafting and trading
 
