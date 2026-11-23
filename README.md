@@ -1,8 +1,18 @@
+<img src="icon.png" alt="" width="80" height="80">
+
 # Item Scroller for Horizon
 
-Install [item_scroller.hmod](item_scroller.hmod) in the active Horizon profile's `horizon-mods` folder and enable Item Scroller in **Options → Mods**. It runs client-side as a WebAssembly mod on Horizon API 0.2.
+Move items between inventories with the mouse wheel, drag across slots to transfer stacks, or press **R** to sort a chest. Save up to 18 crafting recipes and refill a crafting grid with ingredients from your inventory.
 
-Russian labels are available when Horizon’s game language is set to Russian.
+This is caskh’s client-side Rust port of Item Scroller for Horizon. The original Minecraft Java mod was created by masa. This port follows Sakura-Ryoko’s Java 26.3 branch. [Java version used for the port](https://github.com/sakura-ryoko/itemscroller/tree/26.3) · [masa’s original repository](https://github.com/maruohon/itemscroller)
+
+## Installation
+
+1. Download the [Horizon mod package](https://github.com/caskh/item-scroller/raw/refs/heads/main/item_scroller.hmod).
+2. Place `item_scroller.hmod` in your active Horizon profile’s `horizon-mods` folder and enable Item Scroller.
+3. Start Horizon, open a chest, and scroll up over a stack to send one item to the other inventory. Scroll down to pull one back.
+
+**Compatibility** · Horizon mod API 0.2 · Client-side WebAssembly · English and Russian
 
 ## Inventory
 
@@ -52,8 +62,18 @@ last Custom named stack
 
 `menu` disables Item Scroller in that menu. `slot` excludes an individual slot from direct mod clicks. `grid` identifies the result slot and a contiguous 2×2 or 3×3 input grid for a menu whose slots Horizon exposes. `first` and `last` set sorting priorities by item ID or display name.
 
-This port is based on the behavior of [Sakura-Ryoko’s Item Scroller](https://github.com/sakura-ryoko/itemscroller/tree/26.3). Upstream trade favorites, trade-list scroll restoration, and creative inventory interactions require client APIs the pinned Horizon SDK does not expose. Java-specific integrations, per-world recipe files, recipe-book-protocol mass crafting, and sorting by vanilla creative category are also outside this release.
+## Differences from the Java version
+
+Upstream trade favorites, trade-list scroll restoration, and creative inventory interactions require client APIs the pinned Horizon SDK does not expose. Java-specific integrations, per-world recipe files, recipe-book-protocol mass crafting, and sorting by vanilla creative category are also outside this release.
 
 ## Build
 
 Run `cargo horizon-mod build --wasm` with the pinned Horizon SDK and Rust 1.99.1. The SDK is cached in `.horizon/`. The build updates `mod.wasm` and the manifest digest and writes the package to `target/horizon-mod/item_scroller.hmod`.
+
+## Credits and license
+
+- **masa** created Item Scroller for Minecraft Java Edition. [Original project](https://github.com/maruohon/itemscroller)
+- **Sakura-Ryoko** maintains the Java fork used as the reference for this port. [Java 26.3 source](https://github.com/sakura-ryoko/itemscroller/tree/26.3)
+- **caskh** maintains the Horizon port. For Horizon bugs, include your Horizon version, the container you opened, and the gesture you used. [Horizon issues](https://github.com/caskh/item-scroller/issues)
+
+Distributed under the GNU Lesser General Public License v3. The Horizon package includes the Rust source and both license texts. [LGPL v3](LICENSE.txt) · [GPL v3](COPYING.txt)

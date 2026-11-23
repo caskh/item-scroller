@@ -1,12 +1,17 @@
 id = "item_scroller"
-name = "Item Scroller"
-version = "0.4.3"
-description = "Inventory transfers, sorting, and crafting shortcuts for Horizon."
-authors = []
+name = "Item Scroller for Horizon"
+version = "0.4.4"
+description = "Scroll to move items, drag to transfer stacks, sort chests, and refill saved crafting recipes."
+authors = ["caskh"]
+credits = "Original Java mod by masa. Horizon port based on Sakura-Ryoko’s Java 26.3 branch."
+homepage = "https://github.com/sakura-ryoko/itemscroller"
+issues = "https://github.com/caskh/item-scroller/issues"
+license = "LGPL-3.0-only"
+license_url = "https://github.com/sakura-ryoko/itemscroller/blob/26.3/LICENSE.txt"
 api = "0.2"
 side = "client"
 capabilities = ["registries"]
 
 [wasm]
-sha512 = "7bef15aaa3b8ed51760006a43c376ec26b79d70753f5231709a6b377beaee265e3c202af0c093ad1e85321fc5730ebb8556bf92a29bc45fdc031611ce6452717"
+sha512 = "7675beba758e6cc96b2fc968b94bd0ab209d9da7b615e5c4cccc72fc5aca732ad4049c1f406be409a5846712a02b62c5704aed4602f29689784ddae64665315b"
 toolchain = "1.99.1 58cf8f9c35b355199727627d07ae34a4e2846d67"

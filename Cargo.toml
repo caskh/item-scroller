@@ -1,8 +1,13 @@
 [package]
 name = "item-scroller"
-version = "0.4.3"
+version = "0.4.4"
 edition = "2024"
 publish = false
+authors = ["caskh"]
+description = "Inventory scrolling, sorting, and recipe shortcuts for the Horizon client."
+homepage = "https://github.com/sakura-ryoko/itemscroller"
+repository = "https://github.com/caskh/item-scroller"
+license = "LGPL-3.0-only"
 
 [dependencies]
 horizon-mod-api = { path = ".horizon/sdk/api/crates/horizon-mod-api" }
