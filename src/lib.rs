@@ -399,6 +399,11 @@ impl State {
     }
 }
 
+fn furnace_stack_push(menu_id: &str, index: usize, pull: bool, mode: Mode) -> bool {
+    matches!(menu_id, "minecraft:furnace" | "minecraft:blast_furnace" | "minecraft:smoker")
+        && (3..39).contains(&index) && !pull && mode == Mode::Stack
+}
+
 fn transfer_clicks(
     host: &dyn ClientHost, menu: MenuRef, index: usize, pull: bool, mode: Mode, anchor: &Option<ItemStack>,
     blocked: Option<&HashSet<usize>>,
@@ -449,6 +454,17 @@ impl Job {
         match &mut self.action {
             Action::Clicks { .. } => unreachable!(),
             Action::Transfer { slot, pull, mode, anchor } => {
+                if furnace_stack_push(id, *slot, *pull, *mode) {
+                    // QuickMove uses this furnace's cooking recipes and fuel registry.
+                    // Its fallback can also move between the hotbar and main inventory.
+                    if rules.blocked(id).is_none_or(|slots| slots.iter().all(|&i| i == 2 || i >= 39))
+                        && anchor.is_some()
+                        && menu.slot(host, *slot).flatten().map(normalized) == *anchor
+                    {
+                        menu.click(host, &[MenuClick::QuickMove { slot: *slot }]);
+                    }
+                    return false;
+                }
                 let mut clicks = transfer_clicks(host, menu, *slot, *pull, *mode, anchor, rules.blocked(id));
                 if !clicks.is_empty() {
                     if matches!(mode, Mode::All | Mode::Matching) && clicks.len() > 8 {
@@ -879,5 +895,23 @@ impl Hooks for Scroller {
         {
             state.craft(menu, grid, recipe, 1, true);
         }
+    }
+}
+
+#[cfg(test)]
+mod furnace_tests {
+    use super::*;
+
+    #[test]
+    fn whole_stack_push_uses_furnace_quick_move_from_inventory_and_hotbar() {
+        for id in ["minecraft:furnace", "minecraft:blast_furnace", "minecraft:smoker"] {
+            for slot in [3, 29, 30, 38] {
+                assert!(furnace_stack_push(id, slot, false, Mode::Stack));
+            }
+            assert!(!furnace_stack_push(id, 1, false, Mode::Stack));
+            assert!(!furnace_stack_push(id, 3, true, Mode::Stack));
+            assert!(!furnace_stack_push(id, 3, false, Mode::LeaveOne));
+        }
+        assert!(!furnace_stack_push("minecraft:generic_9x3", 3, false, Mode::Stack));
     }
 }
