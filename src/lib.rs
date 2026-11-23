@@ -54,6 +54,7 @@ struct State {
     pending: VecDeque<Job>,
     drag: Option<Drag>,
     recipes: Recipes,
+    recipe_save_error_until: u64,
     rules: Rules,
     menu_id: Option<String>,
     disabled: bool,
@@ -373,11 +374,13 @@ impl State {
         flow
     }
 
-    fn store(&mut self, host: &dyn ClientHost, menu: MenuRef, grid: &Grid) -> Option<Recipe> {
-        let recipe = grid.remember(host, menu)?;
+    fn store(&mut self, host: &dyn ClientHost, menu: MenuRef, grid: &Grid) -> bool {
+        let Some(recipe) = grid.remember(host, menu) else { return false };
         self.recipes.load(host);
-        self.recipes.store(host, recipe.clone());
-        Some(recipe)
+        self.recipe_save_error_until = if self.recipes.store(host, recipe).is_err() {
+            host.millis().saturating_add(5000)
+        } else { 0 };
+        true
     }
 
     fn selected_recipe(&mut self, host: &dyn ClientHost) -> Option<Recipe> {
@@ -662,7 +665,7 @@ impl Hooks for Scroller {
                 return Flow::Cancel;
             }
             if index == Some(grid.output) && e.button == 2 {
-                return if state.store(host, menu, &grid).is_some() { Flow::Cancel } else { Flow::Continue };
+                return if state.store(host, menu, &grid) { Flow::Cancel } else { Flow::Continue };
             }
             if index == Some(grid.output) && e.button == 1 && enabled(host, "right_craft")
                 && let Some(recipe) = grid.remember(host, menu)
@@ -821,10 +824,17 @@ impl Hooks for Scroller {
     }
 
     fn screen_render_post(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenRenderPostEvent<'_>) {
-        if e.screen.id != "inventory" || !enabled(host, "crafting") || !held(host, "recipes") {
+        if e.screen.id != "inventory" || !enabled(host, "crafting") {
             return;
         }
         let mut state = self.0.lock().unwrap();
+        if host.millis() < state.recipe_save_error_until {
+            let message = host.translate("item_scroller.recipe_save_failed")
+                .unwrap_or_else(|| "Couldn’t save this recipe.".into());
+            let x = (e.draw.size()[0] - e.draw.text_width(&message)) * 0.5;
+            e.draw.text(&message, [x.max(0.0), 5.0], 0xffff8888, true);
+        }
+        if !held(host, "recipes") { return; }
         if state.disabled || !state.open(host, e.screen)
             || active_menu(host).and_then(|menu| state.grid(host, menu)).is_none()
         {

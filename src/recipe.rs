@@ -16,7 +16,6 @@ pub struct Recipes {
     pub entries: [Option<Recipe>; COUNT],
     pub selected: usize,
     loaded: bool,
-    dirty: [bool; COUNT],
 }
 
 const READ_QUOTA: u64 = 4 << 20;
@@ -36,10 +35,8 @@ fn read_records(host: &dyn ClientHost, path: &ConfigPath) -> Option<Compound> {
     }
 }
 
-fn updated_file(mut records: Compound, updates: Vec<(usize, Tag)>) -> Option<Vec<u8>> {
-    for (index, record) in updates {
-        records.insert(index.to_string().as_str().into(), record);
-    }
+fn updated_file(mut records: Compound, index: usize, record: Tag) -> Option<Vec<u8>> {
+    records.insert(index.to_string().as_str().into(), record);
     let bytes = Tag::Compound(records).to_network_bytes().ok()?;
     decode_records(&bytes)?;
     Some(bytes)
@@ -95,22 +92,16 @@ impl Recipes {
         }
     }
 
-    pub fn store(&mut self, host: &dyn ClientHost, recipe: Recipe) {
+    pub fn store(&mut self, host: &dyn ClientHost, recipe: Recipe) -> Result<(), ()> {
+        if host.setting_bool("save_recipes").unwrap_or(true) {
+            let path = ConfigPath::new(FILE).unwrap();
+            let records = read_records(host, &path).ok_or(())?;
+            let record = recipe.record(host).ok_or(())?;
+            let bytes = updated_file(records, self.selected, record).ok_or(())?;
+            host.data_files().write(&path, &bytes).map_err(|_| ())?;
+        }
         self.entries[self.selected] = Some(recipe);
-        self.dirty[self.selected] = true;
-        if !host.setting_bool("save_recipes").unwrap_or(true) {
-            return;
-        }
-        let path = ConfigPath::new(FILE).unwrap();
-        let Some(records) = read_records(host, &path) else { return };
-        let updates = self.dirty.iter().enumerate().filter(|(_, dirty)| **dirty)
-            .map(|(i, _)| Some((i, self.entries[i].as_ref()?.record(host)?)))
-            .collect::<Option<Vec<_>>>();
-        if let Some(bytes) = updates.and_then(|updates| updated_file(records, updates))
-            && host.data_files().write(&path, &bytes).is_ok()
-        {
-            self.dirty.fill(false);
-        }
+        Ok(())
     }
 }
 
@@ -276,7 +267,7 @@ mod persistence_tests {
         let mut records = Compound::new();
         records.insert("0".into(), missing.clone());
         let replacement = Tag::compound([("test", Tag::Int(42))]);
-        let bytes = updated_file(records, vec![(1, replacement.clone())]).unwrap();
+        let bytes = updated_file(records, 1, replacement.clone()).unwrap();
         let saved = decode_records(&bytes).unwrap();
         assert_eq!(saved.get(&"0".into()), Some(&missing));
         assert_eq!(saved.get(&"1".into()), Some(&replacement));
@@ -285,8 +276,13 @@ mod persistence_tests {
     #[test]
     fn reject_updates_outside_reader_quota_and_trailing_bytes() {
         let oversized = Tag::ByteArray(vec![0; READ_QUOTA as usize]);
-        assert!(updated_file(Compound::new(), vec![(0, oversized)]).is_none());
-        let mut bytes = updated_file(Compound::new(), vec![]).unwrap();
+        let mut records = Compound::new();
+        records.insert("0".into(), Tag::Int(7));
+        assert!(updated_file(records.clone(), 0, oversized).is_none());
+        let mut bytes = updated_file(records, 1, Tag::Int(8)).unwrap();
+        let saved = decode_records(&bytes).unwrap();
+        assert_eq!(saved.get(&"0".into()), Some(&Tag::Int(7)));
+        assert_eq!(saved.get(&"1".into()), Some(&Tag::Int(8)));
         bytes.push(0);
         assert!(decode_records(&bytes).is_none());
     }

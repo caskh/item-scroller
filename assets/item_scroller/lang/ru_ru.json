@@ -1,4 +1,5 @@
 {
+  "item_scroller.recipe_save_failed": "Не удалось сохранить рецепт.",
   "key.item_scroller.stack": "Переместить стак",
   "key.item_scroller.matching": "Одинаковые предметы (колёсико или перетаскивание)",
   "item_scroller.setting.sweep": "Проводить по ячейкам, чтобы перемещать предметы",
