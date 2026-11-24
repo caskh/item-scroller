@@ -65,6 +65,7 @@ struct State {
     drop_key: Option<String>,
     mass_craft: bool,
     close_config: bool,
+    paused_config: bool,
     favorites: trading::Favorites,
     favorite_error_until: u64,
     trade_inputs: Option<(MenuRef, Vec<Option<ItemStack>>)>,
@@ -501,8 +502,25 @@ impl Hooks for Scroller {
 
     fn screen_key_pressed_pre(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenKeyPressedPreEvent<'_>) -> Flow {
         let mut state = self.0.lock().unwrap();
+        if state.paused_config && e.screen.id == "paused" {
+            if matches!(state.keys.press(host, e.key, e.modifiers, e.repeat), Flow::Continue)
+                && !e.repeat
+            {
+                state.keys.close();
+                state.paused_config = false;
+            }
+            return Flow::Cancel;
+        }
         if host.mod_screen() == Some(ID) {
             return state.keys.press(host, e.key, e.modifiers, e.repeat);
+        }
+        if e.screen.id == "paused" && host.mod_key(ID, "open_config").is_some_and(|(key, mods)| {
+            e.key == key && e.modifiers & 15 == mods.bits & 15
+        }) {
+            if !e.repeat {
+                state.paused_config = true;
+            }
+            return Flow::Cancel;
         }
         if e.screen.id != "inventory" { return Flow::Continue; }
         state.keys.load(host);
@@ -593,9 +611,14 @@ impl Hooks for Scroller {
 
     fn screen_mouse_button_pressed_pre(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenMouseButtonPressedPreEvent<'_>) -> Flow {
         let mut state = self.0.lock().unwrap();
-        if host.mod_screen() == Some(ID) {
+        if (state.paused_config && e.screen.id == "paused") || host.mod_screen() == Some(ID) {
             if e.button == 0 && state.keys.click(host, e.screen.mouse) {
-                state.close_config = true;
+                if state.paused_config {
+                    state.keys.close();
+                    state.paused_config = false;
+                } else {
+                    state.close_config = true;
+                }
             }
             return Flow::Cancel;
         }
@@ -703,6 +726,7 @@ impl Hooks for Scroller {
 
     fn screen_mouse_button_released_pre(&self, _: &dyn ClientHost, e: &mut mod_api::ScreenMouseButtonReleasedPreEvent<'_>) -> Flow {
         let mut state = self.0.lock().unwrap();
+        if state.paused_config && e.screen.id == "paused" { return Flow::Cancel; }
         if state.drag.as_ref().is_some_and(|drag| drag.button == e.button as u8) {
             state.drag = None;
             Flow::Cancel
@@ -710,8 +734,9 @@ impl Hooks for Scroller {
     }
 
     fn screen_key_released_pre(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenKeyReleasedPreEvent<'_>) -> Flow {
-        if host.mod_screen() == Some(ID) {
-            self.0.lock().unwrap().keys.release(host, e.key);
+        let mut state = self.0.lock().unwrap();
+        if (state.paused_config && e.screen.id == "paused") || host.mod_screen() == Some(ID) {
+            state.keys.release(host, e.key);
         }
         Flow::Continue
     }
@@ -720,6 +745,7 @@ impl Hooks for Scroller {
         let mut state = self.0.lock().unwrap();
         state.keys.close();
         state.close_config = false;
+        state.paused_config = false;
         state.drag = None;
         state.mass_craft = false;
         state.trade_inputs = None;
@@ -731,7 +757,7 @@ impl Hooks for Scroller {
     fn screen_mouse_scrolled_pre(&self, host: &dyn ClientHost, e: &mut ScreenMouseScrolledPreEvent<'_>) -> Flow {
         let dy = e.scroll[1];
         let mut state = self.0.lock().unwrap();
-        if host.mod_screen() == Some(ID) {
+        if (state.paused_config && e.screen.id == "paused") || host.mod_screen() == Some(ID) {
             state.keys.scroll(dy);
             return Flow::Cancel;
         }
@@ -817,7 +843,7 @@ impl Hooks for Scroller {
 
     fn screen_render_post(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenRenderPostEvent<'_>) {
         let mut state = self.0.lock().unwrap();
-        if host.mod_screen() == Some(ID) {
+        if (state.paused_config && e.screen.id == "paused") || host.mod_screen() == Some(ID) {
             state.keys.draw(host, e);
             return;
         }
@@ -869,7 +895,11 @@ impl Hooks for Scroller {
 
     fn client_tick_post(&self, host: &mut dyn ClientHost, _: &mut ClientTickPostEvent) {
         if host.consume_click(ID, "open_config") {
-            host.mod_screen_open(ID);
+            if host.client_session().client_server().is_some_and(|server| server.integrated_local) {
+                let _ = host.chat_line(mod_api::Text::translate("item_scroller.keys.open_from_pause", Vec::new()));
+            } else {
+                host.mod_screen_open(ID);
+            }
             return;
         }
         let mut state = self.0.lock().unwrap();

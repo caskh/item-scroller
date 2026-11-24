@@ -55,5 +55,6 @@
   "item_scroller.keys.cancel": "Esc to cancel",
   "item_scroller.keys.reset": "Reset to default",
   "item_scroller.keys.back": "Back",
-  "item_scroller.keys.save_error": "Couldn’t save key bindings."
+  "item_scroller.keys.save_error": "Couldn’t save key bindings.",
+  "item_scroller.keys.open_from_pause": "Open the pause menu with Esc, then press your Item Scroller config shortcut."
 }

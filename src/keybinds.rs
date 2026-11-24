@@ -217,7 +217,8 @@ impl Editor {
         let panel = (width - 20.0).clamp(120.0, 430.0);
         let x = (width - panel) / 2.0;
         let available = ((height - 80.0) / 20.0).floor().max(1.0) as usize;
-        draw.fill([0.0, 0.0, width, height], 0xd5101218);
+        let background = if event.screen.id == "paused" { 0xff101218 } else { 0xd5101218 };
+        draw.fill([0.0, 0.0, width, height], background);
         let title = label(host, "title", "Item Scroller Key Binds");
         draw.text(&title, [x, 14.0], 0xffffffff, true);
         match self.page {
