@@ -21,6 +21,7 @@ use transfer::{Click, Mode, Slot, quick_move_sources, transfer};
 
 const ID: &str = "item_scroller";
 const MAX_PENDING: usize = 64;
+const GAMEPLAY_SHORTCUTS: &str = "gameplay_shortcuts";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Sweep {
@@ -160,6 +161,10 @@ fn drop_key(host: &dyn ClientHost, key: &str) -> bool {
     label("key.drop").is_some_and(|drop| Some(drop) == label(key))
 }
 
+fn shortcuts_enabled(host: &dyn ClientHost) -> bool {
+    host.setting_bool(GAMEPLAY_SHORTCUTS) == Some(true)
+}
+
 fn enabled(host: &dyn ClientHost, id: &str) -> bool {
     host.setting_bool(id).unwrap_or(true)
 }
@@ -216,6 +221,14 @@ fn position_pull(host: &dyn ClientHost, menu: MenuRef, index: usize, up: bool) -
 }
 
 impl State {
+    fn clear_gameplay(&mut self) {
+        self.pending.clear();
+        self.drag = None;
+        self.mass_craft = false;
+        self.trade_inputs = None;
+        self.drop_key = None;
+    }
+
     fn open(&mut self, host: &dyn ClientHost, screen: &ScreenView<'_>) -> bool {
         let id = screen.menu.unwrap_or("inventory");
         if self.menu_id.as_deref() != Some(id) {
@@ -485,6 +498,7 @@ impl Hooks for Scroller {
             .modifiers(mod_api::ClientModifiers::new(6))
             .label("key.item_scroller.open_config").context(KeyConflictContext::InGame));
         for (id, default) in [
+            (GAMEPLAY_SHORTCUTS, false),
             ("sweep", true), ("sweep_drop", true), ("reverse", false), ("reverse_one", false),
             ("reverse_stacks", false), ("position_scroll", false), ("scroll_one", true),
             ("scroll_stack", true), ("scroll_matching", true), ("scroll_all", true),
@@ -498,6 +512,14 @@ impl Hooks for Scroller {
         }
         let _ = r.register_setting(SettingSpec::choice("sort_method", "item_scroller.setting.sort_method",
             ["id", "count", "registry", "name", "rarity"].map(|id| format!("item_scroller.sort.{id}")), 0));
+    }
+
+    fn setting_changed(&self, _: &mut dyn ClientHost, e: &mut mod_api::SettingChangedEvent<'_>) {
+        if e.key == GAMEPLAY_SHORTCUTS {
+            let mut state = self.0.lock().unwrap();
+            state.clear_gameplay();
+            state.disabled = false;
+        }
     }
 
     fn screen_key_pressed_pre(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenKeyPressedPreEvent<'_>) -> Flow {
@@ -522,15 +544,13 @@ impl Hooks for Scroller {
             }
             return Flow::Cancel;
         }
-        if e.screen.id != "inventory" { return Flow::Continue; }
+        if e.screen.id != "inventory" || !shortcuts_enabled(host) { return Flow::Continue; }
         state.keys.load(host);
         state.pending.retain(|job| !matches!(job.action, Action::Trade(..)));
         if state.keys.bound("toggle", e.key, e.modifiers) {
             if !e.repeat {
                 state.disabled = !state.disabled;
-                state.pending.clear();
-                state.drag = None;
-                state.mass_craft = false;
+                state.clear_gameplay();
             }
             return Flow::Cancel;
         }
@@ -622,7 +642,7 @@ impl Hooks for Scroller {
             }
             return Flow::Cancel;
         }
-        if e.screen.id != "inventory" { return Flow::Continue; }
+        if e.screen.id != "inventory" || !shortcuts_enabled(host) { return Flow::Continue; }
         state.keys.load(host);
         if state.disabled || !state.open(host, e.screen) { return Flow::Continue; }
         let Some(menu) = active_menu(host) else { return Flow::Continue };
@@ -713,6 +733,7 @@ impl Hooks for Scroller {
 
     fn screen_mouse_dragged_pre(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenMouseDraggedPreEvent<'_>) -> Flow {
         let mut state = self.0.lock().unwrap();
+        if !shortcuts_enabled(host) { return Flow::Continue; }
         let Some(drag) = &state.drag else { return Flow::Continue };
         let menu = drag.menu;
         if e.button as u8 != drag.button || active_menu(host) != Some(menu) { return Flow::Continue; }
@@ -724,9 +745,10 @@ impl Hooks for Scroller {
         Flow::Cancel
     }
 
-    fn screen_mouse_button_released_pre(&self, _: &dyn ClientHost, e: &mut mod_api::ScreenMouseButtonReleasedPreEvent<'_>) -> Flow {
+    fn screen_mouse_button_released_pre(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenMouseButtonReleasedPreEvent<'_>) -> Flow {
         let mut state = self.0.lock().unwrap();
         if state.paused_config && e.screen.id == "paused" { return Flow::Cancel; }
+        if !shortcuts_enabled(host) { return Flow::Continue; }
         if state.drag.as_ref().is_some_and(|drag| drag.button == e.button as u8) {
             state.drag = None;
             Flow::Cancel
@@ -746,12 +768,8 @@ impl Hooks for Scroller {
         state.keys.close();
         state.close_config = false;
         state.paused_config = false;
-        state.drag = None;
-        state.mass_craft = false;
-        state.trade_inputs = None;
-        state.drop_key = None;
+        state.clear_gameplay();
         state.menu_id = None;
-        state.pending.clear();
     }
 
     fn screen_mouse_scrolled_pre(&self, host: &dyn ClientHost, e: &mut ScreenMouseScrolledPreEvent<'_>) -> Flow {
@@ -761,7 +779,7 @@ impl Hooks for Scroller {
             state.keys.scroll(dy);
             return Flow::Cancel;
         }
-        if e.screen.id != "inventory" || !dy.is_finite() || dy == 0.0 { return Flow::Continue; }
+        if e.screen.id != "inventory" || !shortcuts_enabled(host) || !dy.is_finite() || dy == 0.0 { return Flow::Continue; }
         state.keys.load(host);
         state.pending.retain(|job| !matches!(job.action, Action::Trade(..)));
         if state.disabled || !state.open(host, e.screen) { return Flow::Continue; }
@@ -847,7 +865,7 @@ impl Hooks for Scroller {
             state.keys.draw(host, e);
             return;
         }
-        if e.screen.id != "inventory" {
+        if e.screen.id != "inventory" || !shortcuts_enabled(host) {
             return;
         }
         state.keys.load(host);
@@ -906,6 +924,10 @@ impl Hooks for Scroller {
         if std::mem::take(&mut state.close_config) {
             drop(state);
             host.mod_screen_close(ID);
+            return;
+        }
+        if !shortcuts_enabled(host) {
+            state.clear_gameplay();
             return;
         }
         if state.disabled { return; }

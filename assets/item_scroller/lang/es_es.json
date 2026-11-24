@@ -56,5 +56,6 @@
   "item_scroller.keys.reset": "Restablecer tecla",
   "item_scroller.keys.back": "Volver",
   "item_scroller.keys.save_error": "No se pudieron guardar los controles.",
-  "item_scroller.keys.open_from_pause": "Abre el menú de pausa con Esc y pulsa el atajo de configuración de Item Scroller."
+  "item_scroller.keys.open_from_pause": "Abre el menú de pausa con Esc y pulsa el atajo de configuración de Item Scroller.",
+  "item_scroller.setting.gameplay_shortcuts": "Activar los atajos de juego"
 }

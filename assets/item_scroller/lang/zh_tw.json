@@ -56,5 +56,6 @@
   "item_scroller.keys.reset": "恢復預設",
   "item_scroller.keys.back": "返回",
   "item_scroller.keys.save_error": "無法儲存按鍵綁定。",
-  "item_scroller.keys.open_from_pause": "按 Esc 開啟暫停選單，再按 Item Scroller 設定快捷鍵。"
+  "item_scroller.keys.open_from_pause": "按 Esc 開啟暫停選單，再按 Item Scroller 設定快捷鍵。",
+  "item_scroller.setting.gameplay_shortcuts": "啟用遊戲快捷操作"
 }

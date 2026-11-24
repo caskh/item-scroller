@@ -10,7 +10,9 @@ This is caskh’s client-side Rust port of Item Scroller for Horizon. The origin
 
 1. Download the [Horizon mod package](https://github.com/caskh/item-scroller/raw/refs/heads/main/item_scroller.hmod).
 2. Place `item_scroller.hmod` in your active Horizon profile’s `horizon-mods` folder and enable Item Scroller.
-3. Start Horizon, open a chest, and scroll up over a stack to send one item to the other inventory. Scroll down to pull one back.
+3. In **Mods → Item Scroller → Config**, turn on **Enable gameplay shortcuts** to use inventory, crafting, and trading shortcuts. They start disabled.
+
+Some multiplayer servers may disallow these shortcuts or flag them with anticheat. Check the server rules before enabling them.
 
 **Compatibility** · Horizon mod API 0.2 · Client-side WebAssembly · English, Russian, Spanish, Korean, Dutch, Ukrainian, Simplified Chinese, and Traditional Chinese
 

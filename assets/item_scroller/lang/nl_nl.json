@@ -56,5 +56,6 @@
   "item_scroller.keys.reset": "Standaard herstellen",
   "item_scroller.keys.back": "Terug",
   "item_scroller.keys.save_error": "Kon de toetsen niet opslaan.",
-  "item_scroller.keys.open_from_pause": "Open het pauzemenu met Esc en druk daarna op de sneltoets voor Item Scroller."
+  "item_scroller.keys.open_from_pause": "Open het pauzemenu met Esc en druk daarna op de sneltoets voor Item Scroller.",
+  "item_scroller.setting.gameplay_shortcuts": "Spelsneltoetsen inschakelen"
 }
