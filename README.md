@@ -37,7 +37,9 @@ This is caskh’s client-side Rust port of Item Scroller for Horizon. The origin
 
 For drop drags, hold the Drop key while the pointer is off the slots, then hold the drag modifier and start dragging. The vanilla Drop key can be rebound. The normal player inventory transfers between the main inventory and hotbar. Sorting treats those two regions separately.
 
-In **Controls**, **Matching items (scroll or drag)** applies to wheel transfers and drag gestures. **Matching items (left-click)** applies to left-click and pushes matching stacks from the hovered inventory. In **Mods → Item Scroller → Config**, you can change scroll directions, enable position-aware scrolling, select a sorting method, and toggle individual features. The Ctrl + Shift + wheel option switches to the upstream move-all gesture. By default, that wheel gesture still moves matching items.
+Press **Ctrl + Alt + I** while playing to open Item Scroller’s key binds. Click the current binding and press a key combination, or click **Options** to choose a key and modifiers, reset the binding, or clear it. Backspace clears a binding during capture. **Open Item Scroller config** is the only Item Scroller entry in Horizon’s **Controls**. Action shortcuts start with the mod defaults in the new editor.
+
+**Matching items (scroll or drag)** applies to wheel transfers and drag gestures. **Matching items (left-click)** applies to left-click and pushes matching stacks from the hovered inventory. In **Mods → Item Scroller → Config**, you can change scroll directions, enable position-aware scrolling, select a sorting method, and toggle individual features. The Ctrl + Shift + wheel option switches to the upstream move-all gesture. By default, that wheel gesture still moves matching items.
 
 ## Crafting and trading
 

@@ -1,3 +1,4 @@
+mod keybinds;
 mod recipe;
 mod rules;
 mod sort;
@@ -53,6 +54,7 @@ struct Drag {
 
 #[derive(Default)]
 struct State {
+    keys: keybinds::Editor,
     pending: VecDeque<Job>,
     drag: Option<Drag>,
     recipes: Recipes,
@@ -62,6 +64,7 @@ struct State {
     disabled: bool,
     drop_key: Option<String>,
     mass_craft: bool,
+    close_config: bool,
     favorites: trading::Favorites,
     favorite_error_until: u64,
     trade_inputs: Option<(MenuRef, Vec<Option<ItemStack>>)>,
@@ -149,75 +152,6 @@ fn outside() -> MenuClick {
     MenuClick::Pickup { slot: None, button: MouseButton::Left }
 }
 
-const BINDINGS: &[(&str,&str,u32)] = &[
-    ("item_scroller.bind.0","key.keyboard.",0),
-    ("item_scroller.bind.1","key.keyboard.m",0),
-    ("item_scroller.bind.2","key.keyboard.x",0),
-    ("item_scroller.bind.3","key.keyboard.left.shift",0),
-    ("item_scroller.bind.4","key.keyboard.left.control",0),
-    ("item_scroller.bind.5","key.keyboard.left.alt",0),
-    ("item_scroller.bind.6","key.keyboard.left.alt",1),
-    ("item_scroller.bind.7","key.keyboard.left.control",1),
-    ("item_scroller.bind.8","key.keyboard.a",0),
-    ("item_scroller.bind.9","key.keyboard.b",0),
-    ("item_scroller.bind.10","key.keyboard.c",0),
-    ("item_scroller.bind.11","key.keyboard.d",0),
-    ("item_scroller.bind.12","key.keyboard.e",0),
-    ("item_scroller.bind.13","key.keyboard.f",0),
-    ("item_scroller.bind.14","key.keyboard.g",0),
-    ("item_scroller.bind.15","key.keyboard.h",0),
-    ("item_scroller.bind.16","key.keyboard.i",0),
-    ("item_scroller.bind.17","key.keyboard.j",0),
-    ("item_scroller.bind.18","key.keyboard.k",0),
-    ("item_scroller.bind.19","key.keyboard.l",0),
-    ("item_scroller.bind.20","key.keyboard.n",0),
-    ("item_scroller.bind.21","key.keyboard.o",0),
-    ("item_scroller.bind.22","key.keyboard.p",0),
-    ("item_scroller.bind.23","key.keyboard.q",0),
-    ("item_scroller.bind.24","key.keyboard.r",0),
-    ("item_scroller.bind.25","key.keyboard.s",0),
-    ("item_scroller.bind.26","key.keyboard.t",0),
-    ("item_scroller.bind.27","key.keyboard.u",0),
-    ("item_scroller.bind.28","key.keyboard.v",0),
-    ("item_scroller.bind.29","key.keyboard.w",0),
-    ("item_scroller.bind.30","key.keyboard.y",0),
-    ("item_scroller.bind.31","key.keyboard.z",0),
-];
-
-fn held(host: &dyn ClientHost, action: &str) -> bool {
-    let choice = host.setting_choice(action).unwrap_or(0) as usize;
-    let configured;
-    let (key, required) = if choice == 0 {
-        if action == "drop_matching" {
-            ("key.keyboard.left.control",1)
-        } else {
-            let Some((key, mods)) = host.mod_key("item_scroller",action) else { return false };
-            configured = key;
-            (configured.as_str(), mods.bits)
-        }
-    } else {
-        let Some(&(_,key,mods)) = BINDINGS.get(choice) else { return false };
-        (key,mods)
-    };
-    let mut bits = host.modifiers().bits;
-    for (mask,left,right) in [(1,"key.keyboard.left.shift","key.keyboard.right.shift"),(2,"key.keyboard.left.control","key.keyboard.right.control"),(4,"key.keyboard.left.alt","key.keyboard.right.alt")] {
-        if bits & mask == 0 && (host.is_key_down(left) || host.is_key_down(right)) { bits |= mask; }
-    }
-    let down = match key {
-        "key.keyboard.left.shift" => bits & 1 != 0,
-        "key.keyboard.left.control" => bits & 2 != 0,
-        "key.keyboard.left.alt" => bits & 4 != 0,
-        _ => host.is_key_down(key),
-    };
-    down && bits & required == required
-}
-
-fn bound(host: &dyn ClientHost, action: &str, key: &str, modifiers: u32) -> bool {
-    host.mod_key(ID, action).is_some_and(|(mapped, required)| {
-        mapped == key && modifiers & required.bits == required.bits
-    })
-}
-
 fn drop_key(host: &dyn ClientHost, key: &str) -> bool {
     let label = |id: &str| {
         host.text_string(&mod_api::Text::new(mod_api::text::TextContent::Keybind(id.into()))).ok()
@@ -229,9 +163,9 @@ fn enabled(host: &dyn ClientHost, id: &str) -> bool {
     host.setting_bool(id).unwrap_or(true)
 }
 
-fn sweep(host: &dyn ClientHost, button: u8, drop: bool) -> Option<Sweep> {
-    let stack = held(host, "stack");
-    let matching = held(host, "matching");
+fn sweep(keys: &keybinds::Editor, host: &dyn ClientHost, button: u8, drop: bool) -> Option<Sweep> {
+    let stack = keys.held(host, "stack");
+    let matching = keys.held(host, "matching");
     let mode = match (stack, matching, button) {
         (true, _, 1) => Mode::LeaveOne,
         (true, true, 0) if !drop => Mode::Matching,
@@ -359,8 +293,8 @@ impl State {
         }
         let flow = match sweep {
             Sweep::Move(mode) => {
-                let up = held(host, "move_up");
-                let down = held(host, "move_down");
+                let up = self.keys.held(host, "move_up");
+                let down = self.keys.held(host, "move_down");
                 let pull = if up || down { position_pull(host, menu, slot, up).unwrap_or(false) } else { false };
                 self.transfer(host, menu, slot, pull, mode)
             }
@@ -546,21 +480,9 @@ impl Job {
 #[mod_api::horizon_mod]
 impl Hooks for Scroller {
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
-        for (id, key, mods) in [
-            ("stack", "left.shift", 0), ("matching", "left.control", 0),
-            ("deposit", "left.alt", 1), ("drop_all", "x", 0),
-            ("matching_click", "left.alt", 0), ("move_up", "w", 0), ("move_down", "s", 0),
-            ("toggle", "s", 2), ("sort", "r", 0), ("recipes", "s", 0),
-            ("craft_all", "c", 1), ("mass_craft", "c", 2), ("mass_toggle", "c", 3),
-            ("move_results", "m", 1), ("drop_results", "q", 5), ("debug", "i", 7),
-        ] {
-            r.register_key_mapping(KeyRegistration::new(id, &format!("key.keyboard.{key}"))
-                .modifiers(mod_api::ClientModifiers::new(mods))
-                .label(&format!("key.item_scroller.{id}")).context(KeyConflictContext::Gui));
-        }
-        for id in ["stack", "matching", "deposit", "drop_matching", "drop_all", "matching_click", "move_up", "move_down", "recipes"] {
-            let _ = r.register_setting(SettingSpec::choice(id, format!("item_scroller.config.{id}"), BINDINGS.iter().map(|b| b.0), 0));
-        }
+        r.register_key_mapping(KeyRegistration::new("open_config", "key.keyboard.i")
+            .modifiers(mod_api::ClientModifiers::new(6))
+            .label("key.item_scroller.open_config").context(KeyConflictContext::InGame));
         for (id, default) in [
             ("sweep", true), ("sweep_drop", true), ("reverse", false), ("reverse_one", false),
             ("reverse_stacks", false), ("position_scroll", false), ("scroll_one", true),
@@ -578,10 +500,14 @@ impl Hooks for Scroller {
     }
 
     fn screen_key_pressed_pre(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenKeyPressedPreEvent<'_>) -> Flow {
-        if e.screen.id != "inventory" { return Flow::Continue; }
         let mut state = self.0.lock().unwrap();
+        if host.mod_screen() == Some(ID) {
+            return state.keys.press(host, e.key, e.modifiers, e.repeat);
+        }
+        if e.screen.id != "inventory" { return Flow::Continue; }
+        state.keys.load(host);
         state.pending.retain(|job| !matches!(job.action, Action::Trade(..)));
-        if bound(host, "toggle", e.key, e.modifiers) {
+        if state.keys.bound("toggle", e.key, e.modifiers) {
             if !e.repeat {
                 state.disabled = !state.disabled;
                 state.pending.clear();
@@ -595,20 +521,20 @@ impl Hooks for Scroller {
         let is_drop = drop_key(host, e.key);
         if is_drop {
             state.drop_key = Some(e.key.to_owned());
-            if e.repeat && (state.drag.is_some() || held(host, "drop_all") || held(host, "drop_matching")) {
+            if e.repeat && (state.drag.is_some() || state.keys.held(host, "drop_all") || state.keys.held(host, "drop_matching")) {
                 return Flow::Cancel;
             }
         }
         let index = hit(host, menu, e.screen.mouse);
         if menu.carried(host) != Some(None) || e.repeat { return Flow::Continue; }
 
-        if bound(host, "debug", e.key, e.modifiers) {
+        if state.keys.bound("debug", e.key, e.modifiers) {
             let kinds = menu.slot_kinds(host);
             let kind = index.and_then(|i| kinds.as_ref()?.get(i));
             println!("[Item Scroller] menu={:?}, slot={index:?}, role={kind:?}", e.screen.menu);
             return Flow::Cancel;
         }
-        if enabled(host, "sort_enabled") && bound(host, "sort", e.key, e.modifiers) {
+        if enabled(host, "sort_enabled") && state.keys.bound("sort", e.key, e.modifiers) {
             let Some(index) = index.filter(|&slot| state.allows_slot(slot)) else { return Flow::Continue };
             let Some(mut slots) = sort_slots(host, menu, e.screen, index) else { return Flow::Continue };
             slots.retain(|&slot| state.allows_slot(slot));
@@ -616,27 +542,27 @@ impl Hooks for Scroller {
         }
         if enabled(host, "crafting") {
             if let Some(grid) = state.grid(host, menu) {
-                if held(host, "recipes")
+                if state.keys.held(host, "recipes")
                     && let Some(number) = e.key.strip_prefix("key.keyboard.").and_then(|s| s.parse::<usize>().ok())
                     && (1..=9).contains(&number)
                 {
                     state.recipes.selected = number - 1;
                     if index == Some(grid.output) {
-                        if held(host, "stack") { state.store(host, menu, &grid); }
+                        if state.keys.held(host, "stack") { state.store(host, menu, &grid); }
                         else if let Some(recipe) = state.selected_recipe(host) { state.fill(menu, grid, recipe, 1); }
                     }
                     return Flow::Cancel;
                 }
-                if bound(host, "mass_toggle", e.key, e.modifiers) {
+                if state.keys.bound("mass_toggle", e.key, e.modifiers) {
                     state.mass_craft = !state.mass_craft;
                     return Flow::Cancel;
                 }
-                if bound(host, "craft_all", e.key, e.modifiers) && let Some(recipe) = state.selected_recipe(host) {
+                if state.keys.bound("craft_all", e.key, e.modifiers) && let Some(recipe) = state.selected_recipe(host) {
                     return state.craft(menu, grid, recipe, 4096, false);
                 }
             }
-            let drop = bound(host, "drop_results", e.key, e.modifiers);
-            if (drop || bound(host, "move_results", e.key, e.modifiers))
+            let drop = state.keys.bound("drop_results", e.key, e.modifiers);
+            if (drop || state.keys.bound("move_results", e.key, e.modifiers))
                 && let Some(recipe) = state.selected_recipe(host)
                 && let Some(kinds) = menu.slot_kinds(host)
             {
@@ -650,8 +576,8 @@ impl Hooks for Scroller {
                 return state.clicks(host, menu, None, clicks);
             }
         }
-        let all = held(host, "drop_all");
-        if (!all && !(enabled(host, "matching_drop") && held(host, "drop_matching"))) || !is_drop {
+        let all = state.keys.held(host, "drop_all");
+        if (!all && !(enabled(host, "matching_drop") && state.keys.held(host, "drop_matching"))) || !is_drop {
             return Flow::Continue;
         }
         let Some(index) = index.filter(|&i| state.allows_slot(i)) else { return Flow::Continue };
@@ -666,8 +592,15 @@ impl Hooks for Scroller {
     }
 
     fn screen_mouse_button_pressed_pre(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenMouseButtonPressedPreEvent<'_>) -> Flow {
-        if e.screen.id != "inventory" { return Flow::Continue; }
         let mut state = self.0.lock().unwrap();
+        if host.mod_screen() == Some(ID) {
+            if e.button == 0 && state.keys.click(host, e.screen.mouse) {
+                state.close_config = true;
+            }
+            return Flow::Cancel;
+        }
+        if e.screen.id != "inventory" { return Flow::Continue; }
+        state.keys.load(host);
         if state.disabled || !state.open(host, e.screen) { return Flow::Continue; }
         let Some(menu) = active_menu(host) else { return Flow::Continue };
         let index = hit(host, menu, e.screen.mouse);
@@ -697,13 +630,14 @@ impl Hooks for Scroller {
             state.trade_inputs = None;
         }
         if cursor.is_none() && enabled(host, "crafting") && let Some(grid) = state.grid(host, menu) {
-            if held(host, "recipes") && let Some(i) = (0..recipe::COUNT).find(|&i| contains(recipe::panel_box(e.screen, i), e.screen.mouse)) {
+            if state.keys.held(host, "recipes") && let Some(i) = (0..recipe::COUNT).find(|&i| contains(recipe::panel_box(e.screen, i), e.screen.mouse)) {
                 state.recipes.selected = i;
                 if e.button == 2 {
                     return state.clicks(host, menu, None, recipe::clear(host, menu, &grid.inputs));
                 }
                 if let Some(recipe) = state.selected_recipe(host) {
-                    return state.fill(menu, grid, recipe, if held(host, "stack") { 64 } else { 1 });
+                    let sets = if state.keys.held(host, "stack") { 64 } else { 1 };
+                    return state.fill(menu, grid, recipe, sets);
                 }
                 return Flow::Cancel;
             }
@@ -719,7 +653,7 @@ impl Hooks for Scroller {
             }
         }
         if let Some(cursor) = cursor {
-            if e.button != 0 || !held(host, "stack") { return Flow::Continue; }
+            if e.button != 0 || !state.keys.held(host, "stack") { return Flow::Continue; }
             let Some(kinds) = menu.slot_kinds(host) else { return Flow::Continue };
             let mut clicks = Vec::new();
             if let Some(index) = index {
@@ -741,13 +675,13 @@ impl Hooks for Scroller {
             return state.clicks(host, menu, Some(cursor), clicks);
         }
         let Some(slot) = index else { return Flow::Continue };
-        if e.button == 0 && held(host, "deposit") {
+        if e.button == 0 && state.keys.held(host, "deposit") {
             return state.transfer(host, menu, slot, false, Mode::All);
         }
-        if e.button == 0 && held(host, "matching_click") {
+        if e.button == 0 && state.keys.held(host, "matching_click") {
             return state.transfer(host, menu, slot, false, Mode::Matching);
         }
-        let Some(sweep) = sweep(host, e.button as u8, state.drop_held(host)) else { return Flow::Continue };
+        let Some(sweep) = sweep(&state.keys, host, e.button as u8, state.drop_held(host)) else { return Flow::Continue };
         state.drag = Some(Drag { menu, button: e.button as u8, visited: Vec::new() });
         let flow = state.sweep_slot(host, menu, slot, sweep);
         if !matches!(flow, Flow::Cancel) { state.drag = None; }
@@ -759,7 +693,7 @@ impl Hooks for Scroller {
         let Some(drag) = &state.drag else { return Flow::Continue };
         let menu = drag.menu;
         if e.button as u8 != drag.button || active_menu(host) != Some(menu) { return Flow::Continue; }
-        if enabled(host, "sweep") && let Some(sweep) = sweep(host, drag.button, state.drop_held(host))
+        if enabled(host, "sweep") && let Some(sweep) = sweep(&state.keys, host, drag.button, state.drop_held(host))
             && let Some(slot) = hit(host, menu, e.screen.mouse)
         {
             state.sweep_slot(host, menu, slot, sweep);
@@ -775,8 +709,17 @@ impl Hooks for Scroller {
         } else { Flow::Continue }
     }
 
+    fn screen_key_released_pre(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenKeyReleasedPreEvent<'_>) -> Flow {
+        if host.mod_screen() == Some(ID) {
+            self.0.lock().unwrap().keys.release(host, e.key);
+        }
+        Flow::Continue
+    }
+
     fn screen_closing(&self, _: &dyn ClientHost, _: &mut mod_api::ScreenClosingEvent<'_>) {
         let mut state = self.0.lock().unwrap();
+        state.keys.close();
+        state.close_config = false;
         state.drag = None;
         state.mass_craft = false;
         state.trade_inputs = None;
@@ -787,18 +730,23 @@ impl Hooks for Scroller {
 
     fn screen_mouse_scrolled_pre(&self, host: &dyn ClientHost, e: &mut ScreenMouseScrolledPreEvent<'_>) -> Flow {
         let dy = e.scroll[1];
-        if e.screen.id != "inventory" || !dy.is_finite() || dy == 0.0 { return Flow::Continue; }
         let mut state = self.0.lock().unwrap();
+        if host.mod_screen() == Some(ID) {
+            state.keys.scroll(dy);
+            return Flow::Cancel;
+        }
+        if e.screen.id != "inventory" || !dy.is_finite() || dy == 0.0 { return Flow::Continue; }
+        state.keys.load(host);
         state.pending.retain(|job| !matches!(job.action, Action::Trade(..)));
         if state.disabled || !state.open(host, e.screen) { return Flow::Continue; }
         let Some(menu) = active_menu(host) else { return Flow::Continue };
         if menu.carried(host) != Some(None) { return Flow::Continue; }
         let index = hit(host, menu, e.screen.mouse);
-        let stack = held(host, "stack");
-        let matching = held(host, "matching");
-        let all = held(host, "deposit");
+        let stack = state.keys.held(host, "stack");
+        let matching = state.keys.held(host, "matching");
+        let all = state.keys.held(host, "deposit");
         if enabled(host, "crafting") && let Some(grid) = state.grid(host, menu) {
-            if held(host, "recipes") {
+            if state.keys.held(host, "recipes") {
                 state.recipes.selected = (state.recipes.selected as isize - dy.signum() as isize)
                     .rem_euclid(recipe::COUNT as isize) as usize;
                 return Flow::Cancel;
@@ -868,10 +816,15 @@ impl Hooks for Scroller {
     }
 
     fn screen_render_post(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenRenderPostEvent<'_>) {
+        let mut state = self.0.lock().unwrap();
+        if host.mod_screen() == Some(ID) {
+            state.keys.draw(host, e);
+            return;
+        }
         if e.screen.id != "inventory" {
             return;
         }
-        let mut state = self.0.lock().unwrap();
+        state.keys.load(host);
         if e.screen.menu == Some("minecraft:merchant") {
             if state.disabled || !state.open(host, e.screen) || !enabled(host, "trade_shortcuts") { return; }
             if host.millis() < state.favorite_error_until {
@@ -894,7 +847,7 @@ impl Hooks for Scroller {
             let x = (e.draw.size()[0] - e.draw.text_width(&message)) * 0.5;
             e.draw.text(&message, [x.max(0.0), 5.0], 0xffff8888, true);
         }
-        if !held(host, "recipes") { return; }
+        if !state.keys.held(host, "recipes") { return; }
         if state.disabled || !state.open(host, e.screen)
             || active_menu(host).and_then(|menu| state.grid(host, menu)).is_none()
         {
@@ -915,11 +868,20 @@ impl Hooks for Scroller {
     }
 
     fn client_tick_post(&self, host: &mut dyn ClientHost, _: &mut ClientTickPostEvent) {
+        if host.consume_click(ID, "open_config") {
+            host.mod_screen_open(ID);
+            return;
+        }
         let mut state = self.0.lock().unwrap();
+        if std::mem::take(&mut state.close_config) {
+            drop(state);
+            host.mod_screen_close(ID);
+            return;
+        }
         if state.disabled { return; }
         if enabled(host, "sweep") && let Some(drag) = &state.drag {
             let (menu, button) = (drag.menu, drag.button);
-            if active_menu(host) == Some(menu) && let Some(sweep) = sweep(host, button, state.drop_held(host))
+            if active_menu(host) == Some(menu) && let Some(sweep) = sweep(&state.keys, host, button, state.drop_held(host))
                 && let Some(slot) = hit(host, menu, host.cursor())
             {
                 state.sweep_slot(host, menu, slot, sweep);
@@ -930,7 +892,7 @@ impl Hooks for Scroller {
             if job.run(host, &state.rules, id) { state.pending.push_front(job); }
             return;
         }
-        if enabled(host, "crafting") && (state.mass_craft || held(host, "mass_craft") && !held(host, "mass_toggle"))
+        if enabled(host, "crafting") && (state.mass_craft || state.keys.held(host, "mass_craft") && !state.keys.held(host, "mass_toggle"))
             && let Some(menu) = active_menu(host)
             && menu.slot_boxes(host).is_some()
             && state.menu_id.as_deref().is_some_and(|id| state.rules.menu_allowed(id))
