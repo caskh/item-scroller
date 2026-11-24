@@ -83,5 +83,7 @@
   "item_scroller.sort.registry": "Registry order",
   "item_scroller.sort.name": "Item name",
   "item_scroller.sort.rarity": "Rarity",
-  "item_scroller.setting.upstream_scroll_all": "Ctrl + Shift + scroll moves everything"
+  "item_scroller.setting.upstream_scroll_all": "Ctrl + Shift + scroll moves everything",
+  "item_scroller.setting.trade_shortcuts": "Villager trade shortcuts",
+  "item_scroller.favorite_error": "Couldn’t save trade favorites."
 }

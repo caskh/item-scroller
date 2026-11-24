@@ -83,5 +83,7 @@
   "item_scroller.sort.registry": "Порядку в реестре",
   "item_scroller.sort.name": "Названию предмета",
   "item_scroller.sort.rarity": "Редкости",
-  "item_scroller.setting.upstream_scroll_all": "Ctrl + Shift + колёсико переносит всё"
+  "item_scroller.setting.upstream_scroll_all": "Ctrl + Shift + колёсико переносит всё",
+  "item_scroller.setting.trade_shortcuts": "Управление торговлей с жителями",
+  "item_scroller.favorite_error": "Не удалось сохранить избранные сделки."
 }

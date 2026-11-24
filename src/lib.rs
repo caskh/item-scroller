@@ -2,6 +2,7 @@ mod recipe;
 mod rules;
 mod sort;
 mod transfer;
+mod trading;
 
 use std::{
     collections::{HashSet, VecDeque},
@@ -31,6 +32,7 @@ enum Action {
     Drop { slot: usize, mode: Mode, anchor: ItemStack },
     Clicks { cursor: Option<ItemStack>, clicks: Vec<MenuClick>, expected: Vec<(usize, Option<ItemStack>)> },
     Sort(Vec<usize>),
+    Trade(trading::Trade, Vec<usize>),
     Batch(VecDeque<(usize, ItemStack)>),
     Refill { inputs: Vec<usize>, player: Vec<usize>, wanted: Vec<Option<ItemStack>>, sets: u32 },
     Craft { grid: Grid, recipe: Recipe, remaining: u32, drop: bool },
@@ -60,6 +62,8 @@ struct State {
     disabled: bool,
     drop_key: Option<String>,
     mass_craft: bool,
+    favorites: trading::Favorites,
+    favorite_error_until: u64,
     trade_inputs: Option<(MenuRef, Vec<Option<ItemStack>>)>,
 }
 
@@ -440,7 +444,7 @@ impl Job {
         if menu.carried(host) != Some(None) {
             return false;
         }
-        if matches!(self.action, Action::Sort(_) | Action::Refill { .. } | Action::Craft { .. }) {
+        if matches!(self.action, Action::Trade(..) | Action::Sort(_) | Action::Refill { .. } | Action::Craft { .. }) {
             let Some(current) = menu.slot_count(host).and_then(|count| {
                 (0..count).map(|slot| menu.slot(host, slot)).collect::<Option<Vec<_>>>()
             }) else { return false };
@@ -501,6 +505,7 @@ impl Job {
                 menu.click(host, &clicks);
                 false
             }
+            Action::Trade(trade, player) => id == "minecraft:merchant" && trade.step(host, menu, player),
             Action::Sort(slots) => sort::step(host, menu, slots, rules),
             Action::Refill { inputs, player, wanted, sets } => {
                 let clicks = recipe::refill(host, menu, inputs, player, wanted, *sets);
@@ -564,7 +569,7 @@ impl Hooks for Scroller {
             ("cursor_place", true), ("cursor_drop", true), ("matching_drop", true),
             ("sort_enabled", true), ("crafting", true), ("save_recipes", true),
             ("store_on_fill", false), ("recipe_items", true), ("right_craft", true),
-            ("villager_scroll", true),
+            ("villager_scroll", true), ("trade_shortcuts", true),
         ] {
             let _ = r.register_setting(SettingSpec::toggle(id, format!("item_scroller.setting.{id}"), default));
         }
@@ -575,6 +580,7 @@ impl Hooks for Scroller {
     fn screen_key_pressed_pre(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenKeyPressedPreEvent<'_>) -> Flow {
         if e.screen.id != "inventory" { return Flow::Continue; }
         let mut state = self.0.lock().unwrap();
+        state.pending.retain(|job| !matches!(job.action, Action::Trade(..)));
         if bound(host, "toggle", e.key, e.modifiers) {
             if !e.repeat {
                 state.disabled = !state.disabled;
@@ -666,6 +672,27 @@ impl Hooks for Scroller {
         let Some(menu) = active_menu(host) else { return Flow::Continue };
         let index = hit(host, menu, e.screen.mouse);
         let Some(cursor) = menu.carried(host) else { return Flow::Continue };
+        if e.screen.menu == Some("minecraft:merchant") {
+            state.pending.retain(|job| !matches!(job.action, Action::Trade(..)));
+            if index == Some(2) && cursor.is_none() && enabled(host, "trade_shortcuts")
+                && (0..3).all(|slot| state.allows_slot(slot))
+                && matches!(e.button, 1 | 2)
+                && let Some(trade) = trading::Trade::read(host, menu)
+            {
+                if e.button == 2 {
+                    if state.favorites.toggle(host, &trade).is_none() {
+                        state.favorite_error_until = host.millis().saturating_add(5000);
+                    }
+                } else if let Some(kinds) = menu.slot_kinds(host) {
+                    let player = recipe::player_slots(&kinds);
+                    // QuickMove can send results to any player slot.
+                    if player.iter().all(|&slot| state.allows_slot(slot)) {
+                        return state.enqueue(menu, Action::Trade(trade, player));
+                    }
+                }
+                return Flow::Cancel;
+            }
+        }
         if e.screen.menu == Some("minecraft:merchant") && index.is_none() {
             state.trade_inputs = None;
         }
@@ -762,6 +789,7 @@ impl Hooks for Scroller {
         let dy = e.scroll[1];
         if e.screen.id != "inventory" || !dy.is_finite() || dy == 0.0 { return Flow::Continue; }
         let mut state = self.0.lock().unwrap();
+        state.pending.retain(|job| !matches!(job.action, Action::Trade(..)));
         if state.disabled || !state.open(host, e.screen) { return Flow::Continue; }
         let Some(menu) = active_menu(host) else { return Flow::Continue };
         if menu.carried(host) != Some(None) { return Flow::Continue; }
@@ -840,10 +868,26 @@ impl Hooks for Scroller {
     }
 
     fn screen_render_post(&self, host: &dyn ClientHost, e: &mut mod_api::ScreenRenderPostEvent<'_>) {
-        if e.screen.id != "inventory" || !enabled(host, "crafting") {
+        if e.screen.id != "inventory" {
             return;
         }
         let mut state = self.0.lock().unwrap();
+        if e.screen.menu == Some("minecraft:merchant") {
+            if state.disabled || !state.open(host, e.screen) || !enabled(host, "trade_shortcuts") { return; }
+            if host.millis() < state.favorite_error_until {
+                let message = host.translate("item_scroller.favorite_error").unwrap_or_else(|| "Couldn’t save trade favorites.".into());
+                e.draw.text(&message, [5.0, 5.0], 0xffff8888, true);
+            }
+            if let Some(menu) = active_menu(host)
+                && let Some(trade) = trading::Trade::read(host, menu)
+                && state.favorites.contains(host, &trade)
+                && let Some([x, y, ..]) = menu.slot_boxes(host).and_then(|boxes| boxes.get(2).copied().flatten())
+            {
+                e.draw.text("★", [x, y - 9.0], 0xffffd45a, true);
+            }
+            return;
+        }
+        if !enabled(host, "crafting") { return; }
         if host.millis() < state.recipe_save_error_until {
             let message = host.translate("item_scroller.recipe_save_failed")
                 .unwrap_or_else(|| "Couldn’t save this recipe.".into());

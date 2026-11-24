@@ -12,7 +12,7 @@ This is caskh’s client-side Rust port of Item Scroller for Horizon. The origin
 2. Place `item_scroller.hmod` in your active Horizon profile’s `horizon-mods` folder and enable Item Scroller.
 3. Start Horizon, open a chest, and scroll up over a stack to send one item to the other inventory. Scroll down to pull one back.
 
-**Compatibility** · Horizon mod API 0.2 · Client-side WebAssembly · English and Russian
+**Compatibility** · Horizon mod API 0.2 · Client-side WebAssembly · English, Russian, Spanish, Korean, Dutch, Ukrainian, Simplified Chinese, and Traditional Chinese
 
 ## Inventory
 
@@ -44,6 +44,7 @@ In **Controls**, **Matching items (scroll or drag)** applies to wheel transfers 
 - Middle-click a crafting result to save its exact ingredient layout in the selected memory slot. Hold **S** to show the 18 slots. Scroll or press **1–9** to select a slot, or click a slot to select it and refill the grid. Shift-click a saved slot to fill multiple sets. Middle-click a memory slot to clear the grid.
 - Scroll up over the crafting result to take one result, hold **Shift** to quick-move results, or hold the move-all modifier to refill and craft repeatedly. Scroll down to refill from the selected recipe. Shift + scroll up over an empty result clears the grid. Right-click a result to craft up to a stack into the inventory.
 - **Shift + C** crafts the selected recipe repeatedly. **Ctrl + C** crafts and drops while held, and **Ctrl + Shift + C** toggles that behavior. **Shift + M** moves matching results to open storage. **Shift + Alt + Q** drops matching results from the player inventory.
+- Select an offer and right-click its result to repeat that trade with the available payment items. Middle-click a payable result to add or remove a profile-wide favorite. A star above the result marks a favorite. Favorites match the payment item types and exact result, including components, across villagers.
 - Shift + scroll up over a villager trade result takes the result or clears the payment slots if the result is empty. Shift + scroll down can refill the most recently observed valid trade on that screen.
 
 Recipe memory is saved per Horizon profile by default. Horizon supplies menu layouts and handles each transaction through normal game clicks.
@@ -64,7 +65,7 @@ last Custom named stack
 
 ## Differences from the Java version
 
-Upstream trade favorites, trade-list scroll restoration, and creative inventory interactions require client APIs the pinned Horizon SDK does not expose. Java-specific integrations, per-world recipe files, recipe-book-protocol mass crafting, and sorting by vanilla creative category are also outside this release.
+Individual villager favorites, offer-list reordering, trading all favorites in one action, trade-list scroll restoration, and creative inventory interactions require client APIs the pinned Horizon SDK does not expose. Java-specific integrations, per-world recipe files, recipe-book-protocol mass crafting, and sorting by vanilla creative category are also outside this release.
 
 ## Build
 
