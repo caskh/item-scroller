@@ -56,6 +56,5 @@
   "item_scroller.keys.reset": "По умолчанию",
   "item_scroller.keys.back": "Назад",
   "item_scroller.keys.save_error": "Не удалось сохранить клавиши.",
-  "item_scroller.keys.open_from_pause": "Нажмите Esc, чтобы открыть меню паузы, затем нажмите клавиши настроек Item Scroller.",
-  "item_scroller.setting.gameplay_shortcuts": "Включить игровые сокращения"
+  "item_scroller.keys.open_from_pause": "Нажмите Esc, чтобы открыть меню паузы, затем нажмите клавиши настроек Item Scroller."
 }

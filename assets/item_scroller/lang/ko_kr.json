@@ -56,6 +56,5 @@
   "item_scroller.keys.reset": "기본값으로 재설정",
   "item_scroller.keys.back": "뒤로",
   "item_scroller.keys.save_error": "키 설정을 저장하지 못했습니다.",
-  "item_scroller.keys.open_from_pause": "Esc로 일시 정지 메뉴를 연 다음 Item Scroller 설정 단축키를 누르세요.",
-  "item_scroller.setting.gameplay_shortcuts": "게임 플레이 단축키 사용"
+  "item_scroller.keys.open_from_pause": "Esc로 일시 정지 메뉴를 연 다음 Item Scroller 설정 단축키를 누르세요."
 }

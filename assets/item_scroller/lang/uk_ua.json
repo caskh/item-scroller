@@ -56,6 +56,5 @@
   "item_scroller.keys.reset": "Типова клавіша",
   "item_scroller.keys.back": "Назад",
   "item_scroller.keys.save_error": "Не вдалося зберегти клавіші.",
-  "item_scroller.keys.open_from_pause": "Відкрийте меню паузи клавішею Esc, а потім натисніть клавіші налаштувань Item Scroller.",
-  "item_scroller.setting.gameplay_shortcuts": "Увімкнути ігрові скорочення"
+  "item_scroller.keys.open_from_pause": "Відкрийте меню паузи клавішею Esc, а потім натисніть клавіші налаштувань Item Scroller."
 }
