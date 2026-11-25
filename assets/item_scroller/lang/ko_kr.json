@@ -57,5 +57,14 @@
   "item_scroller.keys.back": "뒤로",
   "item_scroller.keys.save_error": "키 설정을 저장하지 못했습니다.",
   "item_scroller.keys.open_from_pause": "Esc로 일시 정지 메뉴를 연 다음 Item Scroller 설정 단축키를 누르세요.",
-  "item_scroller.setting.gameplay_shortcuts": "게임 플레이 단축키 사용"
+  "item_scroller.setting.gameplay_shortcuts": "게임 플레이 단축키 사용",
+  "item_scroller.setting.sort_boxes_last": "셜커 상자를 맨 뒤로",
+  "item_scroller.setting.sort_boxes_reverse": "더 가득 찬 셜커 상자 먼저",
+  "item_scroller.setting.sort_bundles_last": "꾸러미를 맨 뒤로",
+  "item_scroller.setting.sort_bundles_reverse": "더 가득 찬 꾸러미 먼저",
+  "item_scroller.setting.sort_assume_empty_boxes": "빈 셜커 상자를 쌓을 수 있다고 가정",
+  "item_scroller.sort.category_name": "크리에이티브 분류, 이름순",
+  "item_scroller.sort.category_count": "크리에이티브 분류, 묶음 크기순",
+  "item_scroller.sort.category_registry": "크리에이티브 분류, 레지스트리순",
+  "item_scroller.sort.category_rarity": "크리에이티브 분류, 희귀도순"
 }

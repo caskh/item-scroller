@@ -1,3 +1,4 @@
+mod creative_categories;
 mod keybinds;
 mod recipe;
 mod rules;
@@ -33,7 +34,7 @@ enum Action {
     Transfer { slot: usize, pull: bool, mode: Mode, anchor: Option<ItemStack> },
     Drop { slot: usize, mode: Mode, anchor: ItemStack },
     Clicks { cursor: Option<ItemStack>, clicks: Vec<MenuClick>, expected: Vec<(usize, Option<ItemStack>)> },
-    Sort(Vec<usize>),
+    Sort(sort::Sort),
     Trade(trading::Trade, Vec<usize>),
     Batch(VecDeque<(usize, ItemStack)>),
     Refill { inputs: Vec<usize>, player: Vec<usize>, wanted: Vec<Option<ItemStack>>, sets: u32 },
@@ -398,7 +399,11 @@ impl Job {
             }) else { return false };
             if self.previous.as_ref() == Some(&current) {
                 self.unchanged += 1;
-                return self.unchanged < 8;
+                if self.unchanged < 8 { return true; }
+                let Action::Sort(sort) = &mut self.action else { return false };
+                if !sort.retry_after_timeout() { return false; }
+            } else if let Action::Sort(sort) = &mut self.action {
+                sort.changed();
             }
             self.previous = Some(current);
             self.unchanged = 0;
@@ -454,7 +459,7 @@ impl Job {
                 false
             }
             Action::Trade(trade, player) => id == "minecraft:merchant" && trade.step(host, menu, player),
-            Action::Sort(slots) => sort::step(host, menu, slots, rules),
+            Action::Sort(sort) => sort.step(host, menu, id, rules),
             Action::Refill { inputs, player, wanted, sets } => {
                 let clicks = recipe::refill(host, menu, inputs, player, wanted, *sets);
                 !clicks.is_empty() && menu.click(host, &clicks)
@@ -504,14 +509,17 @@ impl Hooks for Scroller {
             ("scroll_stack", true), ("scroll_matching", true), ("scroll_all", true),
             ("upstream_scroll_all", false),
             ("cursor_place", true), ("cursor_drop", true), ("matching_drop", true),
-            ("sort_enabled", true), ("crafting", true), ("save_recipes", true),
+            ("sort_enabled", true),
+            ("sort_boxes_last", true), ("sort_boxes_reverse", false),
+            ("sort_bundles_last", true), ("sort_bundles_reverse", false),
+            ("sort_assume_empty_boxes", false), ("crafting", true), ("save_recipes", true),
             ("store_on_fill", false), ("recipe_items", true), ("right_craft", true),
             ("villager_scroll", true), ("trade_shortcuts", true),
         ] {
             let _ = r.register_setting(SettingSpec::toggle(id, format!("item_scroller.setting.{id}"), default));
         }
         let _ = r.register_setting(SettingSpec::choice("sort_method", "item_scroller.setting.sort_method",
-            ["id", "count", "registry", "name", "rarity"].map(|id| format!("item_scroller.sort.{id}")), 0));
+            sort::METHODS.map(|id| format!("item_scroller.sort.{id}")), 0));
     }
 
     fn setting_changed(&self, _: &mut dyn ClientHost, e: &mut mod_api::SettingChangedEvent<'_>) {
@@ -576,7 +584,7 @@ impl Hooks for Scroller {
             let Some(index) = index.filter(|&slot| state.allows_slot(slot)) else { return Flow::Continue };
             let Some(mut slots) = sort_slots(host, menu, e.screen, index) else { return Flow::Continue };
             slots.retain(|&slot| state.allows_slot(slot));
-            return state.enqueue(menu, Action::Sort(slots));
+            return state.enqueue(menu, Action::Sort(sort::Sort::new(slots)));
         }
         if enabled(host, "crafting") {
             if let Some(grid) = state.grid(host, menu) {

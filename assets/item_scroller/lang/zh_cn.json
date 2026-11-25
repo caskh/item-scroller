@@ -57,5 +57,14 @@
   "item_scroller.keys.back": "返回",
   "item_scroller.keys.save_error": "无法保存按键绑定。",
   "item_scroller.keys.open_from_pause": "按 Esc 打开暂停菜单，再按 Item Scroller 设置快捷键。",
-  "item_scroller.setting.gameplay_shortcuts": "启用游戏快捷操作"
+  "item_scroller.setting.gameplay_shortcuts": "启用游戏快捷操作",
+  "item_scroller.setting.sort_boxes_last": "潜影盒排在最后",
+  "item_scroller.setting.sort_boxes_reverse": "较满的潜影盒排在前面",
+  "item_scroller.setting.sort_bundles_last": "收纳袋排在最后",
+  "item_scroller.setting.sort_bundles_reverse": "较满的收纳袋排在前面",
+  "item_scroller.setting.sort_assume_empty_boxes": "假定空潜影盒可以堆叠",
+  "item_scroller.sort.category_name": "创造分类，其次按名称",
+  "item_scroller.sort.category_count": "创造分类，其次按堆叠数量",
+  "item_scroller.sort.category_registry": "创造分类，其次按注册顺序",
+  "item_scroller.sort.category_rarity": "创造分类，其次按稀有度"
 }

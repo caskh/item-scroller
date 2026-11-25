@@ -57,5 +57,14 @@
   "item_scroller.keys.back": "Back",
   "item_scroller.keys.save_error": "Couldn’t save key bindings.",
   "item_scroller.keys.open_from_pause": "Open the pause menu with Esc, then press your Item Scroller config shortcut.",
-  "item_scroller.setting.gameplay_shortcuts": "Enable gameplay shortcuts"
+  "item_scroller.setting.gameplay_shortcuts": "Enable gameplay shortcuts",
+  "item_scroller.setting.sort_boxes_last": "Place shulker boxes last",
+  "item_scroller.setting.sort_boxes_reverse": "Sort fuller shulker boxes first",
+  "item_scroller.setting.sort_bundles_last": "Place bundles last",
+  "item_scroller.setting.sort_bundles_reverse": "Sort fuller bundles first",
+  "item_scroller.setting.sort_assume_empty_boxes": "Assume empty shulker boxes stack",
+  "item_scroller.sort.category_name": "Creative category, then name",
+  "item_scroller.sort.category_count": "Creative category, then stack size",
+  "item_scroller.sort.category_registry": "Creative category, then registry order",
+  "item_scroller.sort.category_rarity": "Creative category, then rarity"
 }

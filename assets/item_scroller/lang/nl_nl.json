@@ -57,5 +57,14 @@
   "item_scroller.keys.back": "Terug",
   "item_scroller.keys.save_error": "Kon de toetsen niet opslaan.",
   "item_scroller.keys.open_from_pause": "Open het pauzemenu met Esc en druk daarna op de sneltoets voor Item Scroller.",
-  "item_scroller.setting.gameplay_shortcuts": "Spelsneltoetsen inschakelen"
+  "item_scroller.setting.gameplay_shortcuts": "Spelsneltoetsen inschakelen",
+  "item_scroller.setting.sort_boxes_last": "Shulkerdozen achteraan",
+  "item_scroller.setting.sort_boxes_reverse": "Vollere shulkerdozen eerst",
+  "item_scroller.setting.sort_bundles_last": "Bundels achteraan",
+  "item_scroller.setting.sort_bundles_reverse": "Vollere bundels eerst",
+  "item_scroller.setting.sort_assume_empty_boxes": "Aannemen dat lege shulkerdozen stapelbaar zijn",
+  "item_scroller.sort.category_name": "Creatieve categorie, dan naam",
+  "item_scroller.sort.category_count": "Creatieve categorie, dan stapelgrootte",
+  "item_scroller.sort.category_registry": "Creatieve categorie, dan registervolgorde",
+  "item_scroller.sort.category_rarity": "Creatieve categorie, dan zeldzaamheid"
 }

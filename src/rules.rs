@@ -9,6 +9,7 @@ pub struct Rules {
     pub grids: HashMap<String, (usize, Vec<usize>)>,
     pub first: Vec<String>,
     pub last: Vec<String>,
+    pub category_order: Vec<String>,
 }
 
 impl Rules {
@@ -50,6 +51,10 @@ impl Rules {
                 }
                 "first" => rules.first.push(value.to_owned()),
                 "last" => rules.last.push(value.to_owned()),
+                "category_order" => {
+                    rules.category_order.extend(value.split(|c: char| c == ',' || c.is_whitespace())
+                        .filter(|name| !name.is_empty()).map(str::to_owned));
+                }
                 _ => {}
             }
         }

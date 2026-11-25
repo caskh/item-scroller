@@ -57,5 +57,14 @@
   "item_scroller.keys.back": "Назад",
   "item_scroller.keys.save_error": "Не вдалося зберегти клавіші.",
   "item_scroller.keys.open_from_pause": "Відкрийте меню паузи клавішею Esc, а потім натисніть клавіші налаштувань Item Scroller.",
-  "item_scroller.setting.gameplay_shortcuts": "Увімкнути ігрові скорочення"
+  "item_scroller.setting.gameplay_shortcuts": "Увімкнути ігрові скорочення",
+  "item_scroller.setting.sort_boxes_last": "Шалкерові скриньки в кінці",
+  "item_scroller.setting.sort_boxes_reverse": "Спочатку повніші шалкерові скриньки",
+  "item_scroller.setting.sort_bundles_last": "Мішечки в кінці",
+  "item_scroller.setting.sort_bundles_reverse": "Спочатку повніші мішечки",
+  "item_scroller.setting.sort_assume_empty_boxes": "Вважати порожні шалкерові скриньки складними в стак",
+  "item_scroller.sort.category_name": "Категорія творчого режиму, потім назва",
+  "item_scroller.sort.category_count": "Категорія творчого режиму, потім розмір стака",
+  "item_scroller.sort.category_registry": "Категорія творчого режиму, потім порядок у реєстрі",
+  "item_scroller.sort.category_rarity": "Категорія творчого режиму, потім рідкісність"
 }

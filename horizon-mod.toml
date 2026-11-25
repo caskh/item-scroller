@@ -1,6 +1,6 @@
 id = "item_scroller"
 name = "Item Scroller for Horizon"
-version = "0.5.1"
+version = "0.5.2"
 description = "Scroll to move items, drag to transfer stacks, sort chests, and refill saved crafting recipes."
 authors = ["caskh"]
 credits = "Original Java mod by masa. Horizon port based on Sakura-Ryoko’s Java 26.3 branch."
@@ -13,5 +13,5 @@ side = "client"
 capabilities = ["registries"]
 
 [wasm]
-sha512 = "bd199ac79b646d6defd8a89f2f2327510952c9cccf741c68a606530b0dd74c1f279e0a8bf9f625cf1ecca185fcfe4b37dccd57bec31cbaede0712ca9946fe678"
+sha512 = "f54342e6f32c8d09dbd3f3610ed57f33f3d706b9dec2a9b58edced20a3b72dbf523fc4466472842f8f74ce594c68224d88fd920ac41acf463effda877e1c90d7"
 toolchain = "1.99.1 58cf8f9c35b355199727627d07ae34a4e2846d67"

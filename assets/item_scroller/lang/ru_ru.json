@@ -57,5 +57,14 @@
   "item_scroller.keys.back": "Назад",
   "item_scroller.keys.save_error": "Не удалось сохранить клавиши.",
   "item_scroller.keys.open_from_pause": "Нажмите Esc, чтобы открыть меню паузы, затем нажмите клавиши настроек Item Scroller.",
-  "item_scroller.setting.gameplay_shortcuts": "Включить игровые сокращения"
+  "item_scroller.setting.gameplay_shortcuts": "Включить игровые сокращения",
+  "item_scroller.setting.sort_boxes_last": "Шалкеровые ящики в конце",
+  "item_scroller.setting.sort_boxes_reverse": "Сначала более полные шалкеровые ящики",
+  "item_scroller.setting.sort_bundles_last": "Мешки в конце",
+  "item_scroller.setting.sort_bundles_reverse": "Сначала более полные мешки",
+  "item_scroller.setting.sort_assume_empty_boxes": "Считать, что пустые шалкеровые ящики стакаются",
+  "item_scroller.sort.category_name": "Категория творческого режима, затем название",
+  "item_scroller.sort.category_count": "Категория творческого режима, затем размер стака",
+  "item_scroller.sort.category_registry": "Категория творческого режима, затем порядок в реестре",
+  "item_scroller.sort.category_rarity": "Категория творческого режима, затем редкость"
 }

@@ -63,13 +63,22 @@ slot minecraft:generic_9x3 0
 grid minecraft:crafting 0 1-9
 first minecraft:diamond
 last Custom named stack
+category_order food_and_drinks, tools_and_utilities, combat
 ```
 
 `menu` disables Item Scroller in that menu. `slot` excludes an individual slot from direct mod clicks. `grid` identifies the result slot and a contiguous 2×2 or 3×3 input grid for a menu whose slots Horizon exposes. `first` and `last` set sorting priorities by item ID or display name.
 
+### Sorting options
+
+The **Creative category** modes use Horizon's exported Minecraft 26.3 creative tabs. Items found in multiple tabs use their first category. Items outside the export use **Other**. Choose name, stack size, registry order, or rarity within each category. In `rules.txt`, `category_order` moves the listed categories to the front in the given order. Any remaining categories keep their default order.
+
+Valid categories are `building_blocks`, `colored_blocks`, `natural_blocks`, `functional_blocks`, `redstone_blocks`, `tools_and_utilities`, `combat`, `food_and_drinks`, `ingredients`, `spawn_eggs`, `op_blocks`, and `other`.
+
+By default, sorting places bundles and shulker boxes at the end. It orders bundles by occupied capacity and shulker boxes by occupied slots. Each container type has its own placement and fullness-direction settings. The **Assume empty shulker boxes stack** option is off by default. It tries to merge identical empty boxes with ordinary inventory clicks and continues sorting if the server rejects the merge.
+
 ## Differences from the Java version
 
-Individual villager favorites, offer-list reordering, trading all favorites in one action, trade-list scroll restoration, and creative inventory interactions require client APIs the pinned Horizon SDK does not expose. Java-specific integrations, per-world recipe files, recipe-book-protocol mass crafting, and sorting by vanilla creative category are also outside this release.
+Individual villager favorites, offer-list reordering, trading all favorites in one action, trade-list scroll restoration, and creative inventory interactions require client APIs the pinned Horizon SDK does not expose. Java-specific integrations, per-world recipe files, and recipe-book-protocol mass crafting are also outside this release.
 
 ## Build
 
